@@ -1,64 +1,6 @@
 # Project Management Tool - ER Diagram
 
-```mermaid
-erDiagram
-    User ||--o{ Project : "creates"
-    User ||--o{ project_members : "belongs_to"
-    project_members }o--|| Project : "has_members"
-    Project ||--o{ Task : "has"
-    Project ||--o{ UserStory : "has"
-    Task ||--o{ Comment : "has"
-    User ||--o{ Task : "assigned"
-    User ||--o{ Comment : "creates"
-
-    User {
-        int id PK
-        string username UK
-        string password
-        string role
-        datetime created_at
-    }
-
-    Project {
-        int id PK
-        string name
-        text description
-        string status
-        int created_by FK
-        datetime created_at
-    }
-
-    project_members {
-        int user_id FK
-        int project_id FK
-    }
-
-    Task {
-        int id PK
-        string title
-        text description
-        string status
-        datetime deadline
-        int project_id FK
-        int assigned_to FK
-        datetime created_at
-    }
-
-    UserStory {
-        int id PK
-        int project_id FK
-        text story
-        datetime created_at
-    }
-
-    Comment {
-        int id PK
-        text content
-        int task_id FK
-        int user_id FK
-        datetime created_at
-    }
-```
+<img width="1974" height="3840" alt="Untitled diagram _ Mermaid Chart-2025-09-22-050853" src="https://github.com/user-attachments/assets/5a7794f7-f21c-4a4a-ade4-653a7845084c" />
 
 ## Entity Relationships
 
