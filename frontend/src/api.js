@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://project-management-tool-d41q.onrender.com/';
+const API_URL = 'https://project-management-tool-d41q.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
