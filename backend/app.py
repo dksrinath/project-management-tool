@@ -62,15 +62,16 @@ if __name__ == '__main__':
             db.create_all()
             from database import User
             from auth import hash_password
-
             if not User.query.filter_by(username='admin').first():
                 admin = User(username='admin', password=hash_password('admin123'), role='admin')
                 db.session.add(admin)
                 db.session.commit()
                 logger.info('Default admin user created')
-            
             logger.info('Database initialized successfully')
         except Exception as e:
             logger.error(f'Database initialization failed: {e}')
-            
-    app.run(debug=True, port=5000)
+    app.run(
+        host='0.0.0.0',
+        port=int(os.environ.get('PORT', 5000)),
+        debug=os.getenv('FLASK_ENV') == 'development'
+    )
