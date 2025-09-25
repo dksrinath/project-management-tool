@@ -128,14 +128,31 @@ nav button {
 .task-item {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 1rem;
   border-bottom: 1px solid #ecf0f1;
+  gap: 1rem;
+}
+
+.task-item span:first-child {
+  flex-grow: 1;
+  font-weight: 500;
+}
+
+.task-item .status {
+  flex-shrink: 0;
 }
 
 .status {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  text-align: center;
+  display: inline-block;
+  min-width: 90px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .status.todo {
