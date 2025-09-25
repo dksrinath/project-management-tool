@@ -26,7 +26,7 @@ function Tasks() {
       api.get(`/projects/${form.project_id}`)
         .then(res => {
           const members = res.data.team_members || [];
-          console.log('Loaded team members:', members);
+          console.log('Loaded team members:', members); // 📌 Debug line
           setProjectMembers(members);
         })
         .catch(err => {
@@ -117,6 +117,7 @@ function Tasks() {
             ))}
           </select>
 
+          {/* Assignee Dropdown */}
           {form.project_id && (
             <>
               {projectMembers.length > 0 ? (
@@ -151,6 +152,7 @@ function Tasks() {
         </form>
       )}
 
+      {/* Kanban Board */}
       <div className="task-board" style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
         {['todo', 'in_progress', 'done'].map(status => (
           <div key={status} className="task-column" style={{ flex: 1, border: '1px solid #ddd', padding: '1rem' }}>
