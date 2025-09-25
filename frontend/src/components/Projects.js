@@ -5,10 +5,17 @@ function Projects() {
   const [projects, setProjects] = useState([]);
   const [form, setForm] = useState({ name: '', description: '' });
   const [showForm, setShowForm] = useState(false);
+  const [newMemberId, setNewMemberId] = useState('');
+  const [allUsers, setAllUsers] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [userRole, setUserRole] = useState(localStorage.getItem('role') || 'developer');
 
   useEffect(() => {
     loadProjects();
-  }, []);
+    if (userRole === 'admin' || userRole === 'manager') {
+      api.get('/users').then(res => setAllUsers(res.data)).catch(console.error);
+    }
+  }, [userRole]);
 
   const loadProjects = () => api.get('/projects').then(res => setProjects(res.data));
 
@@ -22,6 +29,13 @@ function Projects() {
 
   const deleteProject = async (id) => {
     await api.delete(`/projects/${id}`);
+    loadProjects();
+  };
+
+  const addMember = async (projectId) => {
+    if (!newMemberId) return;
+    await api.post(`/projects/${projectId}/members`, { user_id: newMemberId });
+    setNewMemberId('');
     loadProjects();
   };
 
@@ -58,6 +72,30 @@ function Projects() {
               <span>Status: {project.status}</span>
               <button onClick={() => deleteProject(project.id)}>Delete</button>
             </div>
+
+            <div>
+              <h4>Team Members</h4>
+              <ul>
+                {project.team_members?.map(m => (
+                  <li key={m.id}>{m.username}</li>
+                ))}
+              </ul>
+            </div>
+
+            {(userRole === 'admin' || userRole === 'manager') && (
+              <div>
+                <h4>Add Team Member</h4>
+                <select value={newMemberId} onChange={e => setNewMemberId(e.target.value)}>
+                  <option value="">Select user</option>
+                  {allUsers
+                    .filter(u => !project.team_members?.some(tm => tm.id === u.id))
+                    .map(u => (
+                      <option key={u.id} value={u.id}>{u.username}</option>
+                    ))}
+                </select>
+                <button onClick={() => addMember(project.id)}>Add</button>
+              </div>
+            )}
           </div>
         ))}
       </div>
