@@ -5,12 +5,20 @@ function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [projectMembers, setProjectMembers] = useState([]);
-  const [form, setForm] = useState({ title: '', description: '', project_id: '', deadline: '', assigned_to: '' });
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    project_id: '',
+    deadline: '',
+    assigned_to: ''
+  });
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     loadTasks();
-    api.get('/projects').then(res => setProjects(res.data));
+    api.get('/projects')
+      .then(res => setProjects(res.data))
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -23,33 +31,61 @@ function Tasks() {
     }
   }, [form.project_id]);
 
-  const loadTasks = () => api.get('/tasks').then(res => setTasks(res.data));
+  const loadTasks = () => {
+    api.get('/tasks')
+      .then(res => setTasks(res.data))
+      .catch(console.error);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await api.post('/tasks', form);
-    setForm({ title: '', description: '', project_id: '', deadline: '', assigned_to: '' });
-    setShowForm(false);
-    loadTasks();
+    try {
+      await api.post('/tasks', form);
+      setForm({
+        title: '',
+        description: '',
+        project_id: '',
+        deadline: '',
+        assigned_to: ''
+      });
+      setShowForm(false);
+      loadTasks();
+    } catch (err) {
+      alert('Failed to create task');
+      console.error(err);
+    }
   };
 
   const updateStatus = async (id, status) => {
-    await api.put(`/tasks/${id}`, { status });
-    loadTasks();
+    try {
+      await api.put(`/tasks/${id}`, { status });
+      loadTasks();
+    } catch (err) {
+      alert('Failed to update task');
+      console.error(err);
+    }
   };
 
   const deleteTask = async (id) => {
-    await api.delete(`/tasks/${id}`);
-    loadTasks();
+    if (!window.confirm('Delete this task?')) return;
+    try {
+      await api.delete(`/tasks/${id}`);
+      loadTasks();
+    } catch (err) {
+      alert('Failed to delete task');
+      console.error(err);
+    }
   };
 
   return (
     <div className="tasks">
       <h1>Tasks</h1>
-      <button onClick={() => setShowForm(!showForm)}>New Task</button>
+      <button onClick={() => setShowForm(!showForm)}>
+        {showForm ? 'Cancel' : 'New Task'}
+      </button>
 
       {showForm && (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} style={{ marginBottom: '2rem' }}>
           <input
             type="text"
             placeholder="Task Title"
@@ -66,6 +102,7 @@ function Tasks() {
             value={form.project_id}
             onChange={(e) => setForm({ ...form, project_id: e.target.value })}
             required
+            style={{ marginTop: '1rem' }}
           >
             <option value="">Select Project</option>
             {projects.map(p => (
@@ -73,16 +110,18 @@ function Tasks() {
             ))}
           </select>
 
+          {/* Assignee Dropdown */}
           {form.project_id && (
             <select
               value={form.assigned_to}
               onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}
               required
+              style={{ marginTop: '1rem' }}
             >
               <option value="">Assign to...</option>
               {projectMembers.map(user => (
                 <option key={user.id} value={user.id}>
-                  {user.username}
+                  {user.username} ({user.role})
                 </option>
               ))}
             </select>
@@ -92,51 +131,61 @@ function Tasks() {
             type="datetime-local"
             value={form.deadline}
             onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+            style={{ marginTop: '1rem' }}
           />
-          <button type="submit">Create</button>
+          <button type="submit" style={{ marginTop: '1rem' }}>Create</button>
         </form>
       )}
 
-      <div className="task-board">
-        <div className="task-column">
-          <h3>To Do</h3>
-          {tasks.filter(t => t.status === 'todo').map(task => (
-            <div key={task.id} className={`task-card ${task.overdue ? 'overdue' : ''}`}>
-              <h4>{task.title}</h4>
-              {task.deadline && <span>Due: {new Date(task.deadline).toLocaleDateString()}</span>}
-              {task.assigned_to && <p>Assigned to: {task.assigned_user?.username}</p>}
-              <div className="task-actions">
-                <button onClick={() => updateStatus(task.id, 'in_progress')}>Start</button>
-                <button onClick={() => deleteTask(task.id)}>Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="task-column">
-          <h3>In Progress</h3>
-          {tasks.filter(t => t.status === 'in_progress').map(task => (
-            <div key={task.id} className="task-card">
-              <h4>{task.title}</h4>
-              {task.assigned_to && <p>Assigned to: {task.assigned_user?.username}</p>}
-              <div className="task-actions">
-                <button onClick={() => updateStatus(task.id, 'done')}>Complete</button>
-                <button onClick={() => updateStatus(task.id, 'todo')}>Back</button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="task-column">
-          <h3>Done</h3>
-          {tasks.filter(t => t.status === 'done').map(task => (
-            <div key={task.id} className="task-card done">
-              <h4>{task.title}</h4>
-              {task.assigned_to && <p>Assigned to: {task.assigned_user?.username}</p>}
-              <button onClick={() => deleteTask(task.id)}>Delete</button>
-            </div>
-          ))}
-        </div>
+      {/* Kanban Board */}
+      <div className="task-board" style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+        {['todo', 'in_progress', 'done'].map(status => (
+          <div key={status} className="task-column" style={{ flex: 1, border: '1px solid #ddd', padding: '1rem' }}>
+            <h3 style={{ textTransform: 'capitalize' }}>
+              {status === 'todo' ? 'To Do' : status === 'in_progress' ? 'In Progress' : 'Done'}
+            </h3>
+            {tasks
+              .filter(t => t.status === status)
+              .map(task => (
+                <div
+                  key={task.id}
+                  className={`task-card ${task.overdue ? 'overdue' : ''}`}
+                  style={{
+                    border: '1px solid #999',
+                    padding: '0.75rem',
+                    margin: '0.5rem 0',
+                    backgroundColor: task.overdue ? '#ffe6e6' : '#f9f9f9'
+                  }}
+                >
+                  <h4>{task.title}</h4>
+                  {task.deadline && (
+                    <p>Due: {new Date(task.deadline).toLocaleString()}</p>
+                  )}
+                  {task.assigned_to && task.assignee_name && (
+                    <p>Assigned to: {task.assignee_name}</p>
+                  )}
+                  <div className="task-actions" style={{ marginTop: '0.5rem' }}>
+                    {status === 'todo' && (
+                      <button onClick={() => updateStatus(task.id, 'in_progress')}>
+                        Start
+                      </button>
+                    )}
+                    {status === 'in_progress' && (
+                      <>
+                        <button onClick={() => updateStatus(task.id, 'done')}>
+                          Complete
+                        </button>
+                        <button onClick={() => updateStatus(task.id, 'todo')}>
+                          Back
+                        </button>
+                      </>
+                    )}
+                    <button onClick={() => deleteTask(task.id)}>Delete</button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        ))}
       </div>
     </div>
   );
