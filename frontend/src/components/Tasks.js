@@ -24,8 +24,15 @@ function Tasks() {
   useEffect(() => {
     if (form.project_id) {
       api.get(`/projects/${form.project_id}`)
-        .then(res => setProjectMembers(res.data.team_members || []))
-        .catch(err => console.error('Failed to load members:', err));
+        .then(res => {
+          const members = res.data.team_members || [];
+          console.log('Loaded team members:', members);
+          setProjectMembers(members);
+        })
+        .catch(err => {
+          console.error('Failed to load members:', err);
+          setProjectMembers([]);
+        });
     } else {
       setProjectMembers([]);
     }
@@ -110,21 +117,28 @@ function Tasks() {
             ))}
           </select>
 
-          {/* Assignee Dropdown */}
           {form.project_id && (
-            <select
-              value={form.assigned_to}
-              onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}
-              required
-              style={{ marginTop: '1rem' }}
-            >
-              <option value="">Assign to...</option>
-              {projectMembers.map(user => (
-                <option key={user.id} value={user.id}>
-                  {user.username} ({user.role})
-                </option>
-              ))}
-            </select>
+            <>
+              {projectMembers.length > 0 ? (
+                <select
+                  value={form.assigned_to}
+                  onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}
+                  required
+                  style={{ marginTop: '1rem' }}
+                >
+                  <option value="">Assign to...</option>
+                  {projectMembers.map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.username || 'Unknown User'} {user.role ? `(${user.role})` : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p style={{ color: '#e74c3c', marginTop: '0.5rem' }}>
+                  No team members in this project. Add members in the Projects tab.
+                </p>
+              )}
+            </>
           )}
 
           <input
@@ -137,7 +151,6 @@ function Tasks() {
         </form>
       )}
 
-      {/* Kanban Board */}
       <div className="task-board" style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
         {['todo', 'in_progress', 'done'].map(status => (
           <div key={status} className="task-column" style={{ flex: 1, border: '1px solid #ddd', padding: '1rem' }}>
@@ -161,7 +174,7 @@ function Tasks() {
                   {task.deadline && (
                     <p>Due: {new Date(task.deadline).toLocaleString()}</p>
                   )}
-                  {task.assigned_to && task.assignee_name && (
+                  {task.assignee_name && (
                     <p>Assigned to: {task.assignee_name}</p>
                   )}
                   <div className="task-actions" style={{ marginTop: '0.5rem' }}>
