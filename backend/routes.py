@@ -124,7 +124,12 @@ def project_detail(id):
             'status': t.status,
             'deadline': t.deadline.isoformat() if t.deadline else None,
             'assigned_to': t.assigned_to
-        } for t in project.tasks]
+        } for t in project.tasks],
+        'team_members': [{
+            'id': m.id,
+            'username': m.username,
+            'role': m.role
+        } for m in project.team_members]
     }
 
 @api.route('/projects/<int:id>/members', methods=['POST'])
