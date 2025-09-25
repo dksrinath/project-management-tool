@@ -7,22 +7,37 @@ function Projects() {
   const [showForm, setShowForm] = useState(false);
   const [newMemberId, setNewMemberId] = useState('');
   const [allUsers, setAllUsers] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedMembers, setSelectedMembers] = useState([]);
   const [userRole, setUserRole] = useState(localStorage.getItem('role') || 'developer');
 
   useEffect(() => {
     loadProjects();
     if (userRole === 'admin' || userRole === 'manager') {
-      api.get('/users').then(res => setAllUsers(res.data)).catch(console.error);
+      api.get('/users')
+        .then(res => setAllUsers(res.data))
+        .catch(console.error);
     }
   }, [userRole]);
 
-  const loadProjects = () => api.get('/projects').then(res => setProjects(res.data));
+  const loadProjects = () =>
+    api.get('/projects').then(res => setProjects(res.data));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await api.post('/projects', form);
+    const res = await api.post('/projects', form);
+    const projectId = res.data.id;
+
+    // assign selected members
+    if (selectedMembers.length > 0) {
+      await Promise.all(
+        selectedMembers.map(userId =>
+          api.post(`/projects/${projectId}/members`, { user_id: userId })
+        )
+      );
+    }
+
     setForm({ name: '', description: '' });
+    setSelectedMembers([]);
     setShowForm(false);
     loadProjects();
   };
@@ -58,6 +73,27 @@ function Projects() {
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
+
+          {(userRole === 'admin' || userRole === 'manager') && (
+            <div>
+              <label>Assign Team Members:</label>
+              <select
+                multiple
+                value={selectedMembers}
+                onChange={(e) => {
+                  const options = Array.from(e.target.selectedOptions);
+                  setSelectedMembers(options.map(opt => opt.value));
+                }}
+              >
+                {allUsers.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.username}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <button type="submit">Create</button>
         </form>
       )}
@@ -85,12 +121,17 @@ function Projects() {
             {(userRole === 'admin' || userRole === 'manager') && (
               <div>
                 <h4>Add Team Member</h4>
-                <select value={newMemberId} onChange={e => setNewMemberId(e.target.value)}>
+                <select
+                  value={newMemberId}
+                  onChange={e => setNewMemberId(e.target.value)}
+                >
                   <option value="">Select user</option>
                   {allUsers
                     .filter(u => !project.team_members?.some(tm => tm.id === u.id))
                     .map(u => (
-                      <option key={u.id} value={u.id}>{u.username}</option>
+                      <option key={u.id} value={u.id}>
+                        {u.username}
+                      </option>
                     ))}
                 </select>
                 <button onClick={() => addMember(project.id)}>Add</button>
