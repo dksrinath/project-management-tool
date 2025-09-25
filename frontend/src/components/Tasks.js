@@ -129,7 +129,7 @@ function Tasks() {
                   <option value="">Assign to...</option>
                   {projectMembers.map(user => (
                     <option key={user.id} value={user.id}>
-                      {user.username || 'Unknown User'} {user.role ? `(${user.role})` : ''}
+                      {user.username}
                     </option>
                   ))}
                 </select>
