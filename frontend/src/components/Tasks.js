@@ -4,7 +4,8 @@ import api from '../api';
 function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [form, setForm] = useState({ title: '', description: '', project_id: '', deadline: '' });
+  const [projectMembers, setProjectMembers] = useState([]);
+  const [form, setForm] = useState({ title: '', description: '', project_id: '', deadline: '', assigned_to: '' });
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
@@ -12,12 +13,22 @@ function Tasks() {
     api.get('/projects').then(res => setProjects(res.data));
   }, []);
 
+  useEffect(() => {
+    if (form.project_id) {
+      api.get(`/projects/${form.project_id}`)
+        .then(res => setProjectMembers(res.data.team_members || []))
+        .catch(err => console.error('Failed to load members:', err));
+    } else {
+      setProjectMembers([]);
+    }
+  }, [form.project_id]);
+
   const loadTasks = () => api.get('/tasks').then(res => setTasks(res.data));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     await api.post('/tasks', form);
-    setForm({ title: '', description: '', project_id: '', deadline: '' });
+    setForm({ title: '', description: '', project_id: '', deadline: '', assigned_to: '' });
     setShowForm(false);
     loadTasks();
   };
@@ -61,6 +72,22 @@ function Tasks() {
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
+
+          {form.project_id && (
+            <select
+              value={form.assigned_to}
+              onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}
+              required
+            >
+              <option value="">Assign to...</option>
+              {projectMembers.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.username}
+                </option>
+              ))}
+            </select>
+          )}
+
           <input
             type="datetime-local"
             value={form.deadline}
@@ -77,6 +104,7 @@ function Tasks() {
             <div key={task.id} className={`task-card ${task.overdue ? 'overdue' : ''}`}>
               <h4>{task.title}</h4>
               {task.deadline && <span>Due: {new Date(task.deadline).toLocaleDateString()}</span>}
+              {task.assigned_to && <p>Assigned to: {task.assigned_user?.username}</p>}
               <div className="task-actions">
                 <button onClick={() => updateStatus(task.id, 'in_progress')}>Start</button>
                 <button onClick={() => deleteTask(task.id)}>Delete</button>
@@ -90,6 +118,7 @@ function Tasks() {
           {tasks.filter(t => t.status === 'in_progress').map(task => (
             <div key={task.id} className="task-card">
               <h4>{task.title}</h4>
+              {task.assigned_to && <p>Assigned to: {task.assigned_user?.username}</p>}
               <div className="task-actions">
                 <button onClick={() => updateStatus(task.id, 'done')}>Complete</button>
                 <button onClick={() => updateStatus(task.id, 'todo')}>Back</button>
@@ -103,6 +132,7 @@ function Tasks() {
           {tasks.filter(t => t.status === 'done').map(task => (
             <div key={task.id} className="task-card done">
               <h4>{task.title}</h4>
+              {task.assigned_to && <p>Assigned to: {task.assigned_user?.username}</p>}
               <button onClick={() => deleteTask(task.id)}>Delete</button>
             </div>
           ))}
